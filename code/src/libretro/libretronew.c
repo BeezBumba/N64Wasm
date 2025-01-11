@@ -1089,8 +1089,9 @@ void update_variables(bool startup)
     alternate_mapping = false;
 
     int p1_pak = PLUGIN_MEMPAK;
-    //p1_pak = PLUGIN_RAW;
+    p1_pak = PLUGIN_RAW; //need this for rumble
     //p1_pak = PLUGIN_MEMPAK;
+    //p1_pak = PLUGIN_RUMBLE_PAK;
 
     if (controller[0].control)
         controller[0].control->Plugin = p1_pak;

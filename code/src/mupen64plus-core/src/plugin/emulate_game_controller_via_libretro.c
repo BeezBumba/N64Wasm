@@ -216,6 +216,8 @@ static unsigned char DataCRC( unsigned char *Data, int iLenght )
     return Remainder;
 }
 
+void vibrate(int controllerNum, int vibrate);
+
 /******************************************************************
   Function: ControllerCommand
   Purpose:  To process the raw data that has just been sent to a
@@ -264,17 +266,19 @@ EXPORT void CALL inputControllerCommand(int Control, unsigned char *Command)
                 unsigned int dwAddress = (Command[3] << 8) + (Command[4] & 0xE0);
                 Data[32] = DataCRC( Data, 32 );
 
-                if ((dwAddress == PAK_IO_RUMBLE) && (rumble.set_rumble_state))
+                if ((dwAddress == PAK_IO_RUMBLE))
                 {
                     if (*Data)
                     {
-                        rumble.set_rumble_state(Control, RETRO_RUMBLE_WEAK, 0xFFFF);
-                        rumble.set_rumble_state(Control, RETRO_RUMBLE_STRONG, 0xFFFF);
+                        vibrate(Control, 1);
+                        //rumble.set_rumble_state(Control, RETRO_RUMBLE_WEAK, 0xFFFF);
+                        //rumble.set_rumble_state(Control, RETRO_RUMBLE_STRONG, 0xFFFF);
                     }
                     else
                     {
-                        rumble.set_rumble_state(Control, RETRO_RUMBLE_WEAK, 0);
-                        rumble.set_rumble_state(Control, RETRO_RUMBLE_STRONG, 0);
+                        vibrate(Control, 0);
+                        //rumble.set_rumble_state(Control, RETRO_RUMBLE_WEAK, 0);
+                        //rumble.set_rumble_state(Control, RETRO_RUMBLE_STRONG, 0);
                     }
                 }
             }

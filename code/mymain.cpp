@@ -74,6 +74,7 @@ struct SdlJoystick
 	SDL_Joystick* joyStick = NULL;
 	SDL_GameController* gameController = NULL;
 	bool gamepadConnected = false;
+    int nativeNum = 0; //the gamepad num on the JS side
 };
 
 struct SdlJoystick sdlJoysticks[4];
@@ -175,13 +176,14 @@ void connectGamepad()
 				if (tempJoyStick != NULL)
 				{
 					sdlJoysticks[joystickCount].joyStick = tempJoyStick;
-					printf("Connected Joystick %s\n", name);
+					printf("Connected Joystick %s Native: %d\n", name, i);
 					if (SDL_IsGameController(i))
 					{
 						sdlJoysticks[joystickCount].gameController = SDL_GameControllerOpen(i);
 						printf("Connected Connected %s\n", SDL_GameControllerName(sdlJoysticks[joystickCount].gameController));
 					}
 					sdlJoysticks[joystickCount].gamepadConnected = true;
+                    sdlJoysticks[joystickCount].nativeNum = i;
 					joystickCount++;
 				}
 				
@@ -894,6 +896,52 @@ void getMouseAccelCurve(int* mouseAxis) {
 
     if (*mouseAxis>mouseRange) *mouseAxis = mouseRange;
     if (*mouseAxis<-mouseRange) *mouseAxis = -mouseRange;
+}
+
+extern "C" {
+
+    void vibrate(int controllerNum, int vibrate)
+    {
+#ifdef USE_XINPUT
+        if (xControllers[controllerNum].connected)
+        {
+            XINPUT_VIBRATION v;
+
+            ZeroMemory(&v, sizeof(XINPUT_VIBRATION));
+
+            if (vibrate)
+            {
+                v.wLeftMotorSpeed = 40000;
+                v.wRightMotorSpeed = 40000;
+            }
+            else
+            {
+                v.wLeftMotorSpeed = 0;
+                v.wRightMotorSpeed = 0;
+            }
+
+            XInputSetState(xControllers[controllerNum].xGamepadIndex, &v);
+        }
+        return;
+#endif
+        if (sdlJoysticks[controllerNum].gamepadConnected)
+        {
+#ifdef __EMSCRIPTEN__
+            if (vibrate)
+            {
+                EM_ASM({
+                    myApp.startRumble($0);
+                    }, sdlJoysticks[controllerNum].nativeNum);
+            }
+            else
+            {
+                EM_ASM({
+                    myApp.stopRumble($0);
+                    }, sdlJoysticks[controllerNum].nativeNum);
+            }
+#endif
+        }
+    }
 }
 
 
