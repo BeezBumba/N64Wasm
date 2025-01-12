@@ -90,7 +90,8 @@ int axis5 = 0;
 Uint8* keyboardState;
 extern "C" {
     struct NeilButtons neilbuttons[4];
-    bool forceAngry = true;
+    bool forceAngry = false;
+    bool ricePlugin = false;;
 }
 bool loadEep = false;
 bool loadSra = false;
@@ -474,6 +475,16 @@ void readConfig()
                     vbuf_use_vbo = true;
                 else
                     vbuf_use_vbo = false;
+            }
+
+                 //rice plugin
+            if (counter == 47)
+            {
+                if (mapping == 1)
+                    ricePlugin = true;
+                else
+                    ricePlugin = false;
+                printf("rice plugin: %d\n", ricePlugin);
             }
 
             counter++;
@@ -1423,10 +1434,20 @@ void limitFPS()
 
     if (forceAngry)
         sprintf(fps_text, "FPS: %d", current_fps);
-    else if (vbuf_use_vbo)
-        sprintf(fps_text, "FPS: %d GameFPS: %d VBO", current_fps, currentSwapCount);
+     else if (ricePlugin)
+    {
+        if (vbuf_use_vbo)
+            sprintf(fps_text, "FPS: %d Rice: %d VBO", current_fps, currentSwapCount);
+        else
+            sprintf(fps_text, "FPS: %d Rice: %d", current_fps, currentSwapCount);
+    }
     else
-        sprintf(fps_text, "FPS: %d GameFPS: %d", current_fps, currentSwapCount);
+        {
+        if (vbuf_use_vbo)
+            sprintf(fps_text, "FPS: %d GameFPS: %d VBO", current_fps, currentSwapCount);
+        else
+            sprintf(fps_text, "FPS: %d GameFPS: %d", current_fps, currentSwapCount);
+    }
 
     //SDL_SetWindowTitle(WindowOpenGL, fps_text);
 
