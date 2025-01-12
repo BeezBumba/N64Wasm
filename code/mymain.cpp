@@ -74,6 +74,7 @@ struct SdlJoystick
 	SDL_Joystick* joyStick = NULL;
 	SDL_GameController* gameController = NULL;
 	bool gamepadConnected = false;
+    int nativeNum = 0; //the gamepad num on the JS side
 };
 
 struct SdlJoystick sdlJoysticks[4];
@@ -109,6 +110,10 @@ extern "C" {
     int globalTriangleTrigger = 0;
     bool pilotwingsFix = false;
     bool vbuf_use_vbo = false;
+
+    //set resolution here (must be 4:3 ratio)
+    int globalWidth = 1200;
+    int globalHeight = 900;
 }
 
 void connectGamepad()
@@ -174,13 +179,14 @@ void connectGamepad()
 				if (tempJoyStick != NULL)
 				{
 					sdlJoysticks[joystickCount].joyStick = tempJoyStick;
-					printf("Connected Joystick %s\n", name);
+					printf("Connected Joystick %s Native: %d\n", name, i);
 					if (SDL_IsGameController(i))
 					{
 						sdlJoysticks[joystickCount].gameController = SDL_GameControllerOpen(i);
 						printf("Connected Connected %s\n", SDL_GameControllerName(sdlJoysticks[joystickCount].gameController));
 					}
 					sdlJoysticks[joystickCount].gamepadConnected = true;
+                    sdlJoysticks[joystickCount].nativeNum = i;
 					joystickCount++;
 				}
 				
@@ -631,7 +637,7 @@ int main(int argc, char* argv[])
 
     int WindowFlags = SDL_WINDOW_OPENGL;
     WindowOpenGL = SDL_CreateWindow(NULL,
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, WindowFlags);
+       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, globalWidth, globalHeight, WindowFlags);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GLContext Context = SDL_GL_CreateContext(WindowOpenGL);
@@ -881,6 +887,48 @@ void getMouseAccelCurve(int* mouseAxis) {
     if (*mouseAxis<-mouseRange) *mouseAxis = -mouseRange;
 }
 
+extern "C" {
+    void vibrate(int controllerNum, int vibrate)
+    {
+#ifdef USE_XINPUT
+        if (xControllers[controllerNum].connected)
+        {
+            XINPUT_VIBRATION v;
+            ZeroMemory(&v, sizeof(XINPUT_VIBRATION));
+            if (vibrate)
+            {
+                v.wLeftMotorSpeed = 40000;
+                v.wRightMotorSpeed = 40000;
+            }
+            else
+            {
+                v.wLeftMotorSpeed = 0;
+                v.wRightMotorSpeed = 0;
+            }
+            XInputSetState(xControllers[controllerNum].xGamepadIndex, &v);
+        }
+        return;
+#endif
+        if (sdlJoysticks[controllerNum].gamepadConnected)
+        {
+#ifdef __EMSCRIPTEN__
+            if (vibrate)
+            {
+                EM_ASM({
+                    myApp.startRumble($0);
+                    }, sdlJoysticks[controllerNum].nativeNum);
+            }
+            else
+            {
+                EM_ASM({
+                    myApp.stopRumble($0);
+                    }, sdlJoysticks[controllerNum].nativeNum);
+            }
+#endif
+        }
+    }
+}
+
 
 void mainLoopInner();
 
@@ -892,6 +940,8 @@ void mainLoop()
         mainLoopInner();
     }
 }
+
+
 
 void mainLoopInner()
 {
@@ -1324,10 +1374,10 @@ void processMenuItemButtons()
 
 void drawOverlay()
 {
-    drawOpenglTexture(50, 50, 640 - 100, 480 - 100, imageOverlay);
+    drawOpenglTexture(50, 50, globalWidth - 100, globalHeight - 100, imageOverlay);
     int menuItemsCount = sizeof(menuItems) / 30;
     int startX = 200;
-    int startY = 480 - 120;
+    int startY = globalHeight - 120;
 
     for (int i = 0; i < menuItemsCount; i++)
     {
@@ -1466,8 +1516,8 @@ void setupDrawTextOpenGL()
 
 void translateDrawTextScreenCoordinates(int x, int y, int w, int h)
 {
-    float screenwidth = 640;
-    float screenheight = 480;
+    float screenwidth = globalWidth;
+    float screenheight = globalHeight;
 
     //openGL coordinates go from (-1,-1) to (1,1) as a square
     float newx = ((2.0f / (float)screenwidth) * (float)x) - 1.0f;

@@ -166,7 +166,6 @@ MYFLAGS   := \
 	-DNOSSE \
 	-DNO_ASM \
 	-DNO_LIBCO \
-	-DDISABLE_3POINT \
 	-Wno-c++11-narrowing \
 	-DINLINE="inline" \
 	-O3 \

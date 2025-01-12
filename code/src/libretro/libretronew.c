@@ -829,6 +829,10 @@ extern void ChangeSize();
 
 static void gfx_set_filtering(void)
 {
+
+    retro_filtering = 0;
+
+
     if (log_cb)
         log_cb(RETRO_LOG_DEBUG, "set filtering mode...\n");
     switch (gfx_plugin)
@@ -899,14 +903,17 @@ static void gfx_set_dithering(void)
     }
 }
 
+extern int globalWidth;
+extern int globalHeight;
+
 void update_variables(bool startup)
 {
     struct retro_variable var;
 
     send_allist_to_hle_rsp = false;
 
-    screen_width = 640;
-    screen_height = 480;
+    screen_width = (uint32_t)globalWidth;
+    screen_height = (uint32_t)globalHeight;
 
     if (startup)
     {
@@ -1035,9 +1042,9 @@ void update_variables(bool startup)
 
 
 #ifdef DISABLE_3POINT
-    retro_filtering = 3;
+    retro_filtering = 0;
 #else
-    retro_filtering = 1;
+    retro_filtering = 0;
 #endif
     gfx_set_filtering();
 
@@ -1083,8 +1090,9 @@ void update_variables(bool startup)
     alternate_mapping = false;
 
     int p1_pak = PLUGIN_MEMPAK;
-    //p1_pak = PLUGIN_RAW;
+    p1_pak = PLUGIN_RAW; //need this for rumble
     //p1_pak = PLUGIN_MEMPAK;
+    //p1_pak = PLUGIN_RUMBLE_PAK;
 
     if (controller[0].control)
         controller[0].control->Plugin = p1_pak;
